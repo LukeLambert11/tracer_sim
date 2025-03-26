@@ -23,7 +23,7 @@ def generate_launch_description():
   package_name = 'tracer_description'
   robot_name_in_model = 'tracer_v1'
   rviz_config_file_path = 'rviz/urdf.rviz'
-  urdf_file_path = 'urdf/mini.xacro'
+  urdf_file_path = 'urdf/tracer_v1.xacro'
   world_file_path = 'world/neighborhood.world'
  
   # Pose where we want to spawn the robot
