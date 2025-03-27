@@ -2,25 +2,19 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import ExecuteProcess, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from ament_index_python.packages import get_package_share_directory
+from launch.substitutions import Command, FindExecutable
+from launch_ros.substitutions import FindPackageShare
 import os
 
 def generate_launch_description():
-    tracer_description_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(
-                get_package_share_directory('tracer_description'),
-                'launch',
-                'display_tracer.launch.py'
-            )
-        )
-    )
+    tracer_desc_pkg = FindPackageShare('tracer_description').find('tracer_description')
+    tracer_urdf = os.path.join(tracer_desc_pkg, 'urdf', 'tracer_v1.xacro')
 
     return LaunchDescription([
-        # Start Gazebo server
+        # Start gzserver
         ExecuteProcess(
             cmd=[
-                'gzserver',
+                'gzserver', '--verbose',
                 '/opt/ros/humble/share/gazebo_ros/worlds/empty.world',
                 '-s', 'libgazebo_ros_init.so',
                 '-s', 'libgazebo_ros_factory.so'
@@ -28,20 +22,27 @@ def generate_launch_description():
             output='screen'
         ),
 
-        # Start Gazebo client
+        # Start gzclient
         ExecuteProcess(
-            cmd=['gzclient', '--verbose'],
+            cmd=['gzclient'],
             output='screen'
         ),
 
-        # Include RViz + robot state publisher
-        tracer_description_launch,
+        # Load joint state publisher, robot state publisher, and RViz
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(tracer_desc_pkg, 'launch', 'display_tracer.launch.py')
+            )
+        ),
 
-        # Spawn the robot
+        # Spawn robot into Gazebo
         Node(
             package='gazebo_ros',
             executable='spawn_entity.py',
-            arguments=['-entity', 'tracer_v1', '-topic', 'robot_description'],
-            output='screen',
-        ),
+            arguments=[
+                '-entity', 'tracer_v1',
+                '-topic', 'robot_description'
+            ],
+            output='screen'
+        )
     ])
